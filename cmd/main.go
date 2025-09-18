@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/codepnw/core-ecommerce-system/config"
-	"github.com/codepnw/core-ecommerce-system/internal/database"
+	"github.com/codepnw/core-ecommerce-system/internal/server"
 	"github.com/joho/godotenv"
 )
 
@@ -22,9 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := database.ConnectPostgres(cfg)
-	if err != nil {
+	if err = server.Run(cfg); err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 }

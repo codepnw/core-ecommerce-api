@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/codepnw/core-ecommerce-system/config"
 	_ "github.com/lib/pq"
@@ -30,6 +29,5 @@ func ConnectPostgres(cfg *config.EnvConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("postgres ping failed: %w", err)
 	}
 
-	log.Printf("database %s connected...", cfg.DB.Name)
 	return db, nil
 }

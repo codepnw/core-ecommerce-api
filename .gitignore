@@ -12,4 +12,3 @@ go.work
 
 *.env
 *.txt
-internal/features

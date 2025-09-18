@@ -8,7 +8,14 @@ import (
 )
 
 type EnvConfig struct {
-	DB DBConfig `envPrefix:"DB_"`
+	APP AppConfig `envPrefix:"APP_"`
+	DB  DBConfig  `envPrefix:"DB_"`
+}
+
+type AppConfig struct {
+	Host    string `env:"HOST" default:"localhost"`
+	Port    int    `env:"PORT" default:"8080"`
+	Version int    `env:"VERSION" default:"1"`
 }
 
 type DBConfig struct {
