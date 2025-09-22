@@ -2,7 +2,7 @@ package routes
 
 import "github.com/codepnw/core-ecommerce-system/internal/features/categories"
 
-func (cfg *RoutesConfig) CategoryRoutes() {
+func (cfg *RoutesConfig) categoryRoutes() {
 	repo := categories.NewCategoryRepository(cfg.DB)
 	service := categories.NewCategoryService(repo)
 	handler := categories.NewCategoryHandler(service)

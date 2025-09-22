@@ -25,8 +25,7 @@ func Run(cfg *config.EnvConfig) error {
 		Router: app,
 		Prefix: fmt.Sprintf("/api/v%d", cfg.APP.Version),
 	}
-	_, err = routes.InitRoutes(routeCfg)
-	if err != nil {
+	if err = routes.InitRoutes(routeCfg); err != nil {
 		return err
 	}
 

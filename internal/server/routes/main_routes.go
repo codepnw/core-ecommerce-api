@@ -14,17 +14,14 @@ type RoutesConfig struct {
 	Prefix string     `validate:"required"`
 }
 
-func InitRoutes(cfg *RoutesConfig) (*RoutesConfig, error) {
+func InitRoutes(cfg *RoutesConfig) error {
 	if err := validate.Struct(cfg); err != nil {
-		return nil, errors.New("routes config required: DB, Router, Prefix")
+		return errors.New("routes config required: DB, Router, Prefix")
 	}
 
-	cfg.CategoryRoutes()
-	cfg.ProductRoutes()
+	cfg.categoryRoutes()
+	cfg.productRoutes()
+	cfg.userRoutes()
 
-	return &RoutesConfig{
-		DB:     cfg.DB,
-		Router: cfg.Router,
-		Prefix: cfg.Prefix,
-	}, nil
+	return nil
 }

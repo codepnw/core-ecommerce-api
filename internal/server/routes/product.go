@@ -2,7 +2,7 @@ package routes
 
 import "github.com/codepnw/core-ecommerce-system/internal/features/products"
 
-func (cfg *RoutesConfig) ProductRoutes() {
+func (cfg *RoutesConfig) productRoutes() {
 	repo := products.NewProductRepository(cfg.DB)
 	service := products.NewProductService(repo)
 	handler := products.NewProductHandler(service)
