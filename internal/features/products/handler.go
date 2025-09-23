@@ -79,6 +79,29 @@ func (h *productHandler) GetProducts(ctx *fiber.Ctx) error {
 	return response.Success(ctx, "", products)
 }
 
+func (h *productHandler) UpdateStock(ctx *fiber.Ctx) error {
+	id, err := commons.GetParamIDInt(ctx)
+	if err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	req := new(ProductUpdateStock)
+	if err := ctx.BodyParser(req); err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	err = h.srv.UpdateStock(ctx.Context(), id, req.Quantity)
+	if err != nil {
+		return response.InternalServerError(ctx, err)
+	}
+
+	return response.Success(ctx, "product stock updated", nil)
+}
+
 func (h *productHandler) UpdateProduct(ctx *fiber.Ctx) error {
 	id, err := commons.GetParamIDInt(ctx)
 	if err != nil {

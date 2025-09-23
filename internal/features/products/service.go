@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
+	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
 )
 
 type IProductService interface {
 	Create(ctx context.Context, req *ProductCreate) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductFilter) ([]*Product, error)
+	UpdateStock(ctx context.Context, id int64, stock int) error
 	Update(ctx context.Context, id int64, req *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -70,6 +72,17 @@ func (s *productService) List(ctx context.Context, filter *ProductFilter) ([]*Pr
 	}
 
 	return s.repo.List(ctx, params)
+}
+
+func (s *productService) UpdateStock(ctx context.Context, id int64, stock int) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	if stock <= 0 {
+		return errs.ErrProductOutOfStock
+	}
+
+	return s.repo.UpdateStock(ctx, id, stock)
 }
 
 func (s *productService) Update(ctx context.Context, id int64, req *ProductUpdate) error {

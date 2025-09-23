@@ -18,6 +18,10 @@ type ProductUpdate struct {
 	ImageURL    *string  `json:"image_url,omitempty" validate:"omitempty"`
 }
 
+type ProductUpdateStock struct {
+	Quantity int `json:"quantity" validate:"required,gt=0"`
+}
+
 type ProductFilter struct {
 	CategoryID *int64  `json:"category_id,omitempty"`
 	OrderBy    *string `json:"order_by,omitempty"`

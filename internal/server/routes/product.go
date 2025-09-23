@@ -13,5 +13,6 @@ func (cfg *RoutesConfig) productRoutes() {
 	r.Get("/", handler.GetProducts)
 	r.Get("/:id", handler.GetProduct)
 	r.Patch("/:id", handler.UpdateProduct)
+	r.Patch("/:id/stock", handler.UpdateStock)
 	r.Delete("/:id", handler.DeleteProduct)
 }

@@ -22,6 +22,7 @@ type IProductRepository interface {
 	Create(ctx context.Context, input *Product) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductListParams) ([]*Product, error)
+	UpdateStock(ctx context.Context, id int64, stock int) error
 	Update(ctx context.Context, id int64, input *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -153,6 +154,28 @@ func (r *productRepository) List(ctx context.Context, filter *ProductListParams)
 	}
 
 	return products, nil
+}
+
+func (r *productRepository) UpdateStock(ctx context.Context, id int64, stock int) error {
+	query := `
+		UPDATE products SET stock = stock + $1 
+		WHERE id = $2 AND stock + $1 >= 0
+	`
+	res, err := r.db.ExecContext(ctx, query, stock, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rows == 0 {
+		return errs.ErrProductNotFound
+	}
+
+	return nil
 }
 
 func (r *productRepository) Delete(ctx context.Context, id int64) error {
