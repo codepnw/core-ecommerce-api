@@ -57,10 +57,21 @@ func (h *productHandler) GetProduct(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) GetProducts(ctx *fiber.Ctx) error {
+	categoryID := int64(ctx.QueryInt("category_id"))
+	orderBy := ctx.Query("order_by")
+	sort := ctx.Query("sort")
 	limit := ctx.QueryInt("limit")
 	offset := ctx.QueryInt("offset")
 
-	products, err := h.srv.List(ctx.Context(), uint(limit), uint(offset))
+	filter := &ProductFilter{
+		CategoryID: &categoryID,
+		OrderBy:    &orderBy,
+		Sort:       &sort,
+		Limit:      &limit,
+		Offset:     &offset,
+	}
+
+	products, err := h.srv.List(ctx.Context(), filter)
 	if err != nil {
 		return response.InternalServerError(ctx, err)
 	}

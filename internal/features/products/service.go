@@ -9,7 +9,7 @@ import (
 type IProductService interface {
 	Create(ctx context.Context, req *ProductCreate) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
-	List(ctx context.Context, limit, offset uint) ([]*Product, error)
+	List(ctx context.Context, filter *ProductFilter) ([]*Product, error)
 	Update(ctx context.Context, id int64, req *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -44,15 +44,32 @@ func (s *productService) GetByID(ctx context.Context, id int64) (*Product, error
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *productService) List(ctx context.Context, limit uint, offset uint) ([]*Product, error) {
+func (s *productService) List(ctx context.Context, filter *ProductFilter) ([]*Product, error) {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	if limit < 10 {
-		limit = 10
+	// Default Filter
+	limit := 10
+	offset := 0
+
+	// Check Filter
+	if filter.Limit != nil && *filter.Limit > 0 {
+		limit = int(*filter.Limit)
 	}
 
-	return s.repo.List(ctx, limit, offset)
+	if filter.Offset != nil && *filter.Offset > 0 {
+		offset = int(*filter.Offset)
+	}
+
+	params := &ProductListParams{
+		CategoryID: *filter.CategoryID,
+		OrderBy:    filter.OrderBy,
+		Sort:       filter.Sort,
+		Limit:      limit,
+		Offset:     offset,
+	}
+
+	return s.repo.List(ctx, params)
 }
 
 func (s *productService) Update(ctx context.Context, id int64, req *ProductUpdate) error {

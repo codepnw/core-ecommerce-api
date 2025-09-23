@@ -11,10 +11,17 @@ import (
 	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
 )
 
+const (
+	selectProductQuery = `
+		SELECT id, category_id, name, description, price, stock, image_url, created_at, updated_at
+		FROM products
+	`
+)
+
 type IProductRepository interface {
 	Create(ctx context.Context, input *Product) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
-	List(ctx context.Context, limit, offset uint) ([]*Product, error)
+	List(ctx context.Context, filter *ProductListParams) ([]*Product, error)
 	Update(ctx context.Context, id int64, input *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -54,11 +61,6 @@ func (r *productRepository) Create(ctx context.Context, input *Product) (*Produc
 	return input, nil
 }
 
-const selectProductQuery = `
-	SELECT id, category_id, name, description, price, stock, image_url, created_at, updated_at
-	FROM products
-`
-
 func (r *productRepository) GetByID(ctx context.Context, id int64) (*Product, error) {
 	p := new(Product)
 	query := fmt.Sprintf("%s WHERE id = $1", selectProductQuery)
@@ -84,15 +86,48 @@ func (r *productRepository) GetByID(ctx context.Context, id int64) (*Product, er
 	return p, nil
 }
 
-func (r *productRepository) List(ctx context.Context, limit, offset uint) ([]*Product, error) {
-	var products []*Product
+func (r *productRepository) List(ctx context.Context, filter *ProductListParams) ([]*Product, error) {
+	var validateOrderByField = map[string]bool{
+		"id":         true,
+		"name":       true,
+		"price":      true,
+		"stock":      true,
+		"created_at": true,
+	}
 
-	query := fmt.Sprintf("%s LIMIT $1 OFFSET $2", selectProductQuery)
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	var validateSortField = map[string]bool{
+		"asc":  true,
+		"desc": true,
+	}
+
+	col := "id"
+	sort := "DESC"
+
+	if filter.OrderBy != nil && validateOrderByField[*filter.OrderBy] {
+		col = *filter.OrderBy
+	}
+
+	if filter.Sort != nil && validateSortField[*filter.Sort] {
+		sort = *filter.Sort
+	}
+
+	var rows *sql.Rows
+	var err error
+
+	if filter.CategoryID != 0 {
+		query := fmt.Sprintf(`%s WHERE category_id = $1 ORDER BY %s %s LIMIT $2 OFFSET $3`, selectProductQuery, col, sort)
+		rows, err = r.db.QueryContext(ctx, query, filter.CategoryID, filter.Limit, filter.Offset)
+	} else {
+		query := fmt.Sprintf(`%s ORDER BY %s %s LIMIT $1 OFFSET $2`, selectProductQuery, col, sort)
+		rows, err = r.db.QueryContext(ctx, query, filter.Limit, filter.Offset)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	var products []*Product
 
 	for rows.Next() {
 		p := new(Product)

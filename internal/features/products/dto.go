@@ -17,3 +17,19 @@ type ProductUpdate struct {
 	Stock       *int     `json:"stock,omitempty" validate:"omitempty"`
 	ImageURL    *string  `json:"image_url,omitempty" validate:"omitempty"`
 }
+
+type ProductFilter struct {
+	CategoryID *int64  `json:"category_id,omitempty"`
+	OrderBy    *string `json:"order_by,omitempty"`
+	Sort       *string `json:"sort,omitempty"`
+	Limit      *int    `json:"limit,omitempty"`
+	Offset     *int    `json:"offset,omitempty"`
+}
+
+type ProductListParams struct {
+	CategoryID int64
+	OrderBy    *string
+	Sort       *string
+	Limit      int
+	Offset     int
+}
