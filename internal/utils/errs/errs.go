@@ -10,8 +10,9 @@ var (
 
 // Products
 var (
-	ErrProductNotFound   = errors.New("product not found")
-	ErrProductOutOfStock = errors.New("product out of stock")
+	ErrProductNotFound           = errors.New("product not found")
+	ErrProductOutOfStock         = errors.New("product out of stock")
+	ErrProductOrCategoryNotFound = errors.New("product or category not found")
 )
 
 // Users

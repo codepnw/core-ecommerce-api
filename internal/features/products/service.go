@@ -3,17 +3,24 @@ package products
 import (
 	"context"
 
+	"github.com/codepnw/core-ecommerce-system/internal/features/categories"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
 )
 
 type IProductService interface {
+	// Products
 	Create(ctx context.Context, req *ProductCreate) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductFilter) ([]*Product, error)
 	UpdateStock(ctx context.Context, id int64, stock int) error
 	Update(ctx context.Context, id int64, req *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
+
+	// Product Categories
+	AssignCategories(ctx context.Context, req *ProductCategoryRequest) error
+	GetCategoriesByProduct(ctx context.Context, productID int64) ([]*categories.Category, error)
+	DelCategoryByProduct(ctx context.Context, productID, categoryID int64) error
 }
 
 type productService struct {
@@ -97,4 +104,32 @@ func (s *productService) Delete(ctx context.Context, id int64) error {
 	defer cancel()
 
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *productService) AssignCategories(ctx context.Context, req *ProductCategoryRequest) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	for _, cID := range req.CategoryIDs {
+		err := s.repo.AssignCategory(ctx, req.ProductID, cID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *productService) GetCategoriesByProduct(ctx context.Context, productID int64) ([]*categories.Category, error) {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	return s.repo.GetCategoriesByProduct(ctx, productID)
+}
+
+func (s *productService) DelCategoryByProduct(ctx context.Context, productID, categoryID int64) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	return s.repo.DelCategoryByProduct(ctx, productID, categoryID)
 }

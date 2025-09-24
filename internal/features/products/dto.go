@@ -30,10 +30,16 @@ type ProductFilter struct {
 	Offset     *int    `json:"offset,omitempty"`
 }
 
+// ProductListParams For Repository
 type ProductListParams struct {
 	CategoryID int64
 	OrderBy    *string
 	Sort       *string
 	Limit      int
 	Offset     int
+}
+
+type ProductCategoryRequest struct {
+	ProductID   int64   `json:"product_id"`
+	CategoryIDs []int64 `json:"category_ids"`
 }

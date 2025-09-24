@@ -7,8 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetParamIDInt(ctx *fiber.Ctx) (int64, error) {
-	idStr := ctx.Params("id")
+func GetParamIDInt(ctx *fiber.Ctx, key string) (int64, error) {
+	idStr := ctx.Params(key)
 	if idStr == "" {
 		return 0, errors.New("id is required")
 	}
@@ -21,8 +21,8 @@ func GetParamIDInt(ctx *fiber.Ctx) (int64, error) {
 	return id, nil
 }
 
-func GetParamIDStr(ctx *fiber.Ctx) (string, error) {
-	id := ctx.Params("id")
+func GetParamIDStr(ctx *fiber.Ctx, key string) (string, error) {
+	id := ctx.Params(key)
 	if id == "" {
 		return "", errors.New("id is required")
 	}

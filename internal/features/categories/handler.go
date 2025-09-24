@@ -7,6 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const categoryIDKey = "category_id"
+
 type categoryHandler struct {
 	srv CategoryService
 }
@@ -42,7 +44,7 @@ func (h *categoryHandler) List(ctx *fiber.Ctx) error {
 }
 
 func (h *categoryHandler) Update(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, categoryIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -64,7 +66,7 @@ func (h *categoryHandler) Update(ctx *fiber.Ctx) error {
 }
 
 func (h *categoryHandler) Delete(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, categoryIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}

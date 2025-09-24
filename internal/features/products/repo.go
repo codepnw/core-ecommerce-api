@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/codepnw/core-ecommerce-system/internal/features/categories"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
 )
 
@@ -19,12 +20,18 @@ const (
 )
 
 type IProductRepository interface {
+	// Products
 	Create(ctx context.Context, input *Product) (*Product, error)
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductListParams) ([]*Product, error)
 	UpdateStock(ctx context.Context, id int64, stock int) error
 	Update(ctx context.Context, id int64, input *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
+
+	// Product Categories
+	AssignCategory(ctx context.Context, productID, categoryID int64) error
+	GetCategoriesByProduct(ctx context.Context, productID int64) ([]*categories.Category, error)
+	DelCategoryByProduct(ctx context.Context, productID, categoryID int64) error
 }
 
 type productRepository struct {
@@ -170,7 +177,7 @@ func (r *productRepository) UpdateStock(ctx context.Context, id int64, stock int
 	if err != nil {
 		return err
 	}
-	
+
 	if rows == 0 {
 		return errs.ErrProductNotFound
 	}
@@ -270,4 +277,75 @@ func (r *productRepository) buildUpdateQuery(id int64, p *ProductUpdate) (string
 	args = append(args, id)
 
 	return query, args, nil
+}
+
+func (r *productRepository) GetCategoriesByProduct(ctx context.Context, productID int64) ([]*categories.Category, error) {
+	query := `
+		SELECT c.id, c.name, c.description
+		FROM categories c
+		JOIN product_categories pc ON pc.category_id = c.id
+		WHERE pc.product_id = $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cats []*categories.Category
+	for rows.Next() {
+		c := new(categories.Category)
+		err = rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.Description,
+		)
+		if err != nil {
+			return nil, err
+		}
+		cats = append(cats, c)
+	}
+
+	return cats, rows.Err()
+}
+
+func (r *productRepository) AssignCategory(ctx context.Context, productID, categoryID int64) error {
+	query := `
+		INSERT INTO product_categories (product_id, category_id) 
+		VALUES ($1, $2)
+	`
+	res, err := r.db.ExecContext(ctx, query, productID, categoryID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errs.ErrProductOrCategoryNotFound
+	}
+
+	return nil
+}
+
+func (r *productRepository) DelCategoryByProduct(ctx context.Context, productID, categoryID int64) error {
+	query := `DELETE FROM product_categories WHERE category_id = $1 AND product_id = $2`
+	res, err := r.db.ExecContext(ctx, query, categoryID, productID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errs.ErrProductOrCategoryNotFound
+	}
+
+	return nil
 }

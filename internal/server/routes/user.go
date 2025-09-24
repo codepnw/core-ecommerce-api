@@ -9,11 +9,13 @@ func (cfg *RoutesConfig) userRoutes() {
 	service := users.NewUserService(repo)
 	handler := users.NewUserHandler(service)
 
+	const userID = "/:user_id"
+
 	r := cfg.Router.Group(cfg.Prefix + "/users")
 
 	r.Post("/", handler.CreateUser)
 	r.Get("/", handler.GetUsers)
-	r.Get("/:id", handler.GetUser)
-	r.Patch("/:id", handler.UpdateUser)
-	r.Delete("/:id", handler.DeleteUser)
+	r.Get(userID, handler.GetUser)
+	r.Patch(userID, handler.UpdateUser)
+	r.Delete(userID, handler.DeleteUser)
 }

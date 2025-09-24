@@ -12,3 +12,9 @@ migrate-create:
 
 migrate-up:
 	@migrate -database $(MIGRATE_DB) -path $(MIGRATE_PATH) up
+
+migrate-down:
+	@migrate -database $(MIGRATE_DB) -path $(MIGRATE_PATH) down
+
+migrate-force:
+	@migrate -database $(MIGRATE_DB) -path $(MIGRATE_PATH) force 1

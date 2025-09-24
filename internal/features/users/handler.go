@@ -10,6 +10,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const userIDKey = "user_id"
+
 type userHandler struct {
 	srv IUserService
 }
@@ -37,7 +39,7 @@ func (h *userHandler) CreateUser(ctx *fiber.Ctx) error {
 }
 
 func (h *userHandler) GetUser(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDStr(ctx)
+	id, err := commons.GetParamIDStr(ctx, userIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -66,7 +68,7 @@ func (h *userHandler) GetUsers(ctx *fiber.Ctx) error {
 }
 
 func (h *userHandler) UpdateUser(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDStr(ctx)
+	id, err := commons.GetParamIDStr(ctx, userIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -91,7 +93,7 @@ func (h *userHandler) UpdateUser(ctx *fiber.Ctx) error {
 }
 
 func (h *userHandler) DeleteUser(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDStr(ctx)
+	id, err := commons.GetParamIDStr(ctx, userIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}

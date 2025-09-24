@@ -10,6 +10,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const (
+	productIDKey  = "product_id"
+	categoryIDKey = "category_id"
+)
+
 type productHandler struct {
 	srv IProductService
 }
@@ -40,7 +45,7 @@ func (h *productHandler) CreateProduct(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) GetProduct(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, productIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -57,7 +62,7 @@ func (h *productHandler) GetProduct(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) GetProducts(ctx *fiber.Ctx) error {
-	categoryID := int64(ctx.QueryInt("category_id"))
+	categoryID := int64(ctx.QueryInt(categoryIDKey))
 	orderBy := ctx.Query("order_by")
 	sort := ctx.Query("sort")
 	limit := ctx.QueryInt("limit")
@@ -80,7 +85,7 @@ func (h *productHandler) GetProducts(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) UpdateStock(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, productIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -103,7 +108,7 @@ func (h *productHandler) UpdateStock(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) UpdateProduct(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, productIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -125,7 +130,7 @@ func (h *productHandler) UpdateProduct(ctx *fiber.Ctx) error {
 }
 
 func (h *productHandler) DeleteProduct(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx)
+	id, err := commons.GetParamIDInt(ctx, productIDKey)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -135,4 +140,59 @@ func (h *productHandler) DeleteProduct(ctx *fiber.Ctx) error {
 	}
 
 	return response.Success(ctx, "product deleted", nil)
+}
+
+func (h *productHandler) GetCategoriesByProduct(ctx *fiber.Ctx) error {
+	id, err := commons.GetParamIDInt(ctx, productIDKey)
+	if err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	cats, err := h.srv.GetCategoriesByProduct(ctx.Context(), id)
+	if err != nil {
+		if errors.Is(err, errs.ErrProductOrCategoryNotFound) {
+			return response.NotFound(ctx, err.Error())
+		}
+		return response.InternalServerError(ctx, err)
+	}
+
+	return response.Success(ctx, "", cats)
+}
+
+func (h *productHandler) AssignCategories(ctx *fiber.Ctx) error {
+	req := new(ProductCategoryRequest)
+	if err := ctx.BodyParser(req); err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	if err := h.srv.AssignCategories(ctx.Context(), req); err != nil {
+		return response.InternalServerError(ctx, err)
+	}
+
+	return response.Success(ctx, "added product to category success", nil)
+}
+
+func (h *productHandler) DelCategoryByProduct(ctx *fiber.Ctx) error {
+	pID, err := commons.GetParamIDInt(ctx, productIDKey)
+	if err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	cID, err := commons.GetParamIDInt(ctx, "category_id")
+	if err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	if err = h.srv.DelCategoryByProduct(ctx.Context(), pID, cID); err != nil {
+		if errors.Is(err, errs.ErrProductOrCategoryNotFound) {
+			return response.NotFound(ctx, err.Error())
+		}
+		return response.InternalServerError(ctx, err)
+	}
+
+	return response.Success(ctx, "delete category product success", nil)
 }
