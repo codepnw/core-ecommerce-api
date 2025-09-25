@@ -13,4 +13,3 @@ go.work
 tmp
 *.env
 *.txt
-internal/features/addresses

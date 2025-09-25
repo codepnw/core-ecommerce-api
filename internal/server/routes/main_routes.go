@@ -22,6 +22,7 @@ func InitRoutes(cfg *RoutesConfig) error {
 	cfg.categoryRoutes()
 	cfg.productRoutes()
 	cfg.userRoutes()
+	cfg.addressRoutes()
 
 	return nil
 }

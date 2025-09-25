@@ -19,3 +19,7 @@ var (
 var (
 	ErrUserNotFound = errors.New("user not found")
 )
+
+var (
+	ErrAddressNotFound = errors.New("address not found")
+)
