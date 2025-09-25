@@ -24,4 +24,5 @@ func (cfg *RoutesConfig) addressRoutes() {
 	r.Get(addressParamKey, handler.GetAddressByID)
 	r.Patch(addressParamKey, handler.UpdateAddress)
 	r.Delete(addressParamKey, handler.DeleteAddress)
+	r.Delete(addressParamKey+"/default", handler.SetAddressDefault)
 }

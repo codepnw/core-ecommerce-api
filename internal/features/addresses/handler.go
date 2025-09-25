@@ -37,7 +37,7 @@ func (h *addressHandler) CreateAddress(ctx *fiber.Ctx) error {
 }
 
 func (h *addressHandler) GetAddressByID(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx, consts.KeyAddressParam)
+	id, err := commons.GetParamIDStr(ctx, consts.KeyAddressParam)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -65,7 +65,7 @@ func (h *addressHandler) GetAddressByUserID(ctx *fiber.Ctx) error {
 }
 
 func (h *addressHandler) UpdateAddress(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx, consts.KeyAddressParam)
+	id, err := commons.GetParamIDStr(ctx, consts.KeyAddressParam)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -90,7 +90,7 @@ func (h *addressHandler) UpdateAddress(ctx *fiber.Ctx) error {
 }
 
 func (h *addressHandler) DeleteAddress(ctx *fiber.Ctx) error {
-	id, err := commons.GetParamIDInt(ctx, consts.KeyAddressParam)
+	id, err := commons.GetParamIDStr(ctx, consts.KeyAddressParam)
 	if err != nil {
 		return response.BadRequest(ctx, err.Error())
 	}
@@ -103,4 +103,20 @@ func (h *addressHandler) DeleteAddress(ctx *fiber.Ctx) error {
 	}
 
 	return response.Success(ctx, "address deleted", nil)
+}
+
+func (h *addressHandler) SetAddressDefault(ctx *fiber.Ctx) error {
+	id, err := commons.GetParamIDStr(ctx, consts.KeyAddressParam)
+	if err != nil {
+		return response.BadRequest(ctx, err.Error())
+	}
+
+	if err = h.srv.SetAddressDefault(ctx.Context(), id); err != nil {
+		if errors.Is(err, errs.ErrAddressNotFound) {
+			return response.NotFound(ctx, err.Error())
+		}
+		return response.InternalServerError(ctx, err)
+	}
+
+	return response.Success(ctx, "set address default success", nil)
 }

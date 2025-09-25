@@ -20,10 +20,11 @@ const (
 
 type IAddressRepository interface {
 	Create(ctx context.Context, input *Address) error
-	GetByID(ctx context.Context, id int64) (*Address, error)
+	GetByID(ctx context.Context, id string) (*Address, error)
 	List(ctx context.Context, userID string) ([]*Address, error)
-	Update(ctx context.Context, id int64, input *AddressUpdate) error
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id string, input *AddressUpdate) error
+	Delete(ctx context.Context, id string) error
+	SetDefault(ctx context.Context, addressID, userID string) error
 }
 
 type addressRepository struct {
@@ -52,7 +53,7 @@ func (r *addressRepository) Create(ctx context.Context, input *Address) error {
 	return err
 }
 
-func (r *addressRepository) GetByID(ctx context.Context, id int64) (*Address, error) {
+func (r *addressRepository) GetByID(ctx context.Context, id string) (*Address, error) {
 	address := new(Address)
 	query := fmt.Sprintf("%s WHERE id = $1 LIMIT 1", selectAddress)
 	err := r.db.QueryRowContext(ctx, query).Scan(
@@ -106,7 +107,7 @@ func (r *addressRepository) List(ctx context.Context, userID string) ([]*Address
 	return adds, rows.Err()
 }
 
-func (r *addressRepository) Delete(ctx context.Context, id int64) error {
+func (r *addressRepository) Delete(ctx context.Context, id string) error {
 	res, err := r.db.ExecContext(ctx, "DELETE FROM addresses WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -124,7 +125,7 @@ func (r *addressRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *addressRepository) Update(ctx context.Context, id int64, input *AddressUpdate) error {
+func (r *addressRepository) Update(ctx context.Context, id string, input *AddressUpdate) error {
 	query, args, err := r.buildUpdateQuery(id, input)
 	if err != nil {
 		return err
@@ -148,7 +149,7 @@ func (r *addressRepository) Update(ctx context.Context, id int64, input *Address
 	return nil
 }
 
-func (r *addressRepository) buildUpdateQuery(id int64, input *AddressUpdate) (string, []any, error) {
+func (r *addressRepository) buildUpdateQuery(id string, input *AddressUpdate) (string, []any, error) {
 	columns := []string{}
 	args := []any{}
 	idx := 1
@@ -192,4 +193,44 @@ func (r *addressRepository) buildUpdateQuery(id int64, input *AddressUpdate) (st
 
 	query := fmt.Sprintf("UPDATE addresses SET %s, updated_at = NOW() WHERE id = $%d", setColumns, idx)
 	return query, args, nil
+}
+
+func (r *addressRepository) SetDefault(ctx context.Context, addressID, userID string) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Reset Default
+	_, err = tx.ExecContext(
+		ctx,
+		"UPDATE addresses SET is_default = false WHERE user_id = $1",
+		userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Set New Default
+	res, err := tx.ExecContext(
+		ctx,
+		"UPDATE addresses SET is_default = true WHERE id = $1 AND user_id = $2",
+		addressID,
+		userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errs.ErrAddressNotFound
+	}
+
+	return tx.Commit()
 }

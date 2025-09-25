@@ -11,10 +11,11 @@ import (
 
 type IAddressServide interface {
 	CreateAddress(ctx context.Context, req *AddressCreate) error
-	GetAddressByID(ctx context.Context, id int64) (*Address, error)
+	GetAddressByID(ctx context.Context, addressID string) (*Address, error)
 	GetAddressByUserID(ctx context.Context, userID string) ([]*Address, error)
-	UpdateAddress(ctx context.Context, id int64, req *AddressUpdate) error
-	DeleteAddress(ctx context.Context, id int64) error
+	UpdateAddress(ctx context.Context, addressID string, req *AddressUpdate) error
+	DeleteAddress(ctx context.Context, addressID string) error
+	SetAddressDefault(ctx context.Context, addressID string) error
 }
 
 type addressService struct {
@@ -47,11 +48,11 @@ func (s *addressService) CreateAddress(ctx context.Context, req *AddressCreate) 
 	return nil
 }
 
-func (s *addressService) GetAddressByID(ctx context.Context, id int64) (*Address, error) {
+func (s *addressService) GetAddressByID(ctx context.Context, addressID string) (*Address, error) {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	res, err := s.repo.GetByID(ctx, id)
+	res, err := s.repo.GetByID(ctx, addressID)
 	if err != nil {
 		if errors.Is(err, errs.ErrAddressNotFound) {
 			return nil, err
@@ -76,11 +77,11 @@ func (s *addressService) GetAddressByUserID(ctx context.Context, userID string) 
 	return res, nil
 }
 
-func (s *addressService) UpdateAddress(ctx context.Context, id int64, req *AddressUpdate) error {
+func (s *addressService) UpdateAddress(ctx context.Context, addressID string, req *AddressUpdate) error {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	if err := s.repo.Update(ctx, id, req); err != nil {
+	if err := s.repo.Update(ctx, addressID, req); err != nil {
 		if errors.Is(err, errs.ErrAddressNotFound) {
 			return err
 		}
@@ -91,11 +92,11 @@ func (s *addressService) UpdateAddress(ctx context.Context, id int64, req *Addre
 	return nil
 }
 
-func (s *addressService) DeleteAddress(ctx context.Context, id int64) error {
+func (s *addressService) DeleteAddress(ctx context.Context, addressID string) error {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	if err := s.repo.Delete(ctx, id); err != nil {
+	if err := s.repo.Delete(ctx, addressID); err != nil {
 		if errors.Is(err, errs.ErrAddressNotFound) {
 			return err
 		}
@@ -104,4 +105,16 @@ func (s *addressService) DeleteAddress(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (s *addressService) SetAddressDefault(ctx context.Context, addressID string) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	res, err := s.GetAddressByID(ctx, addressID)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.SetDefault(ctx, res.ID, res.UserID)
 }
