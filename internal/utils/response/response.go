@@ -22,6 +22,12 @@ func Success(ctx *fiber.Ctx, msg string, data any) error {
 	})
 }
 
+func Unauthorized(ctx *fiber.Ctx, msg string) error {
+	return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{
+		"message": msg,
+	})
+}
+
 // ------- ERROR ----------
 
 func BadRequest(ctx *fiber.Ctx, msg string) error {

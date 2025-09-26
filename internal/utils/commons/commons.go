@@ -7,6 +7,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type MockUser struct {
+	ID string
+}
+
+func GetCurrentUser(ctx *fiber.Ctx) (*MockUser, error) {
+	// TODO: Get User Context later
+	u := &MockUser{
+		ID: "3128d165-65c6-4ad9-85d0-231c617cb01e",
+	}
+	return u, nil
+}
+
 func GetParamIDInt(ctx *fiber.Ctx, key string) (int64, error) {
 	idStr := ctx.Params(key)
 	if idStr == "" {

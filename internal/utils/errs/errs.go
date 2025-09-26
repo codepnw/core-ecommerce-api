@@ -20,6 +20,13 @@ var (
 	ErrUserNotFound = errors.New("user not found")
 )
 
+// Products
 var (
 	ErrAddressNotFound = errors.New("address not found")
+)
+
+// Carts
+var (
+	ErrCartNotFound   = errors.New("cart not found")
+	ErrQuantityIsZero = errors.New("quantity must be greater than zero")
 )
