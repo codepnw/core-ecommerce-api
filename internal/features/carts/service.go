@@ -2,6 +2,7 @@ package carts
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
@@ -14,6 +15,7 @@ type ICartService interface {
 	GetCart(ctx context.Context, userID string) ([]*CartItemsResponse, error)
 	RemoveItem(ctx context.Context, userID string, productID int64) error
 	ClearCart(ctx context.Context, userID string) error
+	ClearCartTx(ctx context.Context, tx *sql.Tx, userID string) error
 }
 
 type cartService struct {
@@ -45,6 +47,21 @@ func (s *cartService) ClearCart(ctx context.Context, userID string) error {
 	defer cancel()
 
 	err := s.repo.ClearCart(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errs.ErrCartNotFound) {
+			return err
+		}
+		log.Errorf("clear cart failed: %v", err)
+		return errors.New("clear cart failed")
+	}
+	return nil
+}
+
+func (s *cartService) ClearCartTx(ctx context.Context, tx *sql.Tx, userID string) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	err := s.repo.ClearCartTx(ctx, tx, userID)
 	if err != nil {
 		if errors.Is(err, errs.ErrCartNotFound) {
 			return err

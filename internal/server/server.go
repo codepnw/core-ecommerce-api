@@ -22,6 +22,7 @@ func Run(cfg *config.EnvConfig) error {
 	// Setup Routes
 	routeCfg := &routes.RoutesConfig{
 		DB:     db,
+		Tx:     database.NewTxManager(db),
 		Router: app,
 		Prefix: fmt.Sprintf("/api/v%d", cfg.APP.Version),
 	}

@@ -4,14 +4,16 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/codepnw/core-ecommerce-system/internal/database"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
 	"github.com/gofiber/fiber/v2"
 )
 
 type RoutesConfig struct {
-	DB     *sql.DB    `validate:"required"`
-	Router *fiber.App `validate:"required"`
-	Prefix string     `validate:"required"`
+	DB     *sql.DB             `validate:"required"`
+	Tx     *database.TxManager `validate:"required"`
+	Router *fiber.App          `validate:"required"`
+	Prefix string              `validate:"required"`
 }
 
 func InitRoutes(cfg *RoutesConfig) error {
@@ -24,6 +26,7 @@ func InitRoutes(cfg *RoutesConfig) error {
 	cfg.userRoutes()
 	cfg.addressRoutes()
 	cfg.cartRoutes()
+	cfg.orderRoutes()
 
 	return nil
 }

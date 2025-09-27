@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -30,4 +31,32 @@ func ConnectPostgres(cfg *config.EnvConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+type TxManager struct {
+	db *sql.DB
+}
+
+func NewTxManager(db *sql.DB) *TxManager {
+	return &TxManager{db: db}
+}
+
+func (m *TxManager) Transaction(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	err = fn(tx)
+	return
 }

@@ -6,8 +6,8 @@ type CartItemRequest struct {
 }
 
 type CartItemsResponse struct {
-	ProductID       int64   `json:"product_id"`
-	ProductName     string  `json:"product_name"`
-	ProductPrice    float64 `json:"product_price"`
-	ProductQuantity int     `json:"product_quantity"`
+	ProductID       int64  `json:"product_id"`
+	ProductName     string `json:"product_name"`
+	ProductPrice    float64  `json:"product_price"`
+	ProductQuantity int64    `json:"product_quantity"`
 }

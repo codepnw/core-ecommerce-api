@@ -56,7 +56,7 @@ func (r *addressRepository) Create(ctx context.Context, input *Address) error {
 func (r *addressRepository) GetByID(ctx context.Context, id string) (*Address, error) {
 	address := new(Address)
 	query := fmt.Sprintf("%s WHERE id = $1 LIMIT 1", selectAddress)
-	err := r.db.QueryRowContext(ctx, query).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&address.ID,
 		&address.UserID,
 		&address.AddressLine,
