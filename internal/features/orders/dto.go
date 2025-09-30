@@ -10,6 +10,26 @@ const (
 	StatusCancelled OrderStatus = "cancelled"
 )
 
+type OrdersResponse struct {
+	OrderID    int64   `json:"order_id"`
+	Email      string  `json:"email"`
+	FullName   string  `json:"full_name"`
+	TotalPrice float64 `json:"total_price"`
+	Phone      string  `json:"phone"`
+	City       string  `json:"city"`
+	State      string  `json:"state"`
+	Status     string  `json:"status"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
+}
+
+type OrderFilter struct {
+	Status *string
+	UserID *string
+	Limit  *int
+	Offset *int
+}
+
 type OrderRequest struct {
 	UserID    string `json:"user_id"`
 	AddressID string `json:"address_id"`

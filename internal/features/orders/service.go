@@ -14,6 +14,8 @@ import (
 
 type IOrderService interface {
 	CreateOrder(ctx context.Context, req *OrderRequest) error
+	ListOrders(ctx context.Context, filter *OrderFilter) ([]*OrdersResponse, error)
+	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
 
 type orderService struct {
@@ -106,4 +108,23 @@ func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error
 		return nil
 	})
 	return err
+}
+
+func (s *orderService) ListOrders(ctx context.Context, filter *OrderFilter) ([]*OrdersResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()	
+			
+	res, err := s.repo.ListOrders(ctx, filter)
+	if err != nil {							
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (s *orderService) UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	return s.repo.UpdateStatus(ctx, id, string(status))
 }

@@ -30,3 +30,8 @@ var (
 	ErrCartNotFound   = errors.New("cart not found")
 	ErrQuantityIsZero = errors.New("quantity must be greater than zero")
 )
+
+// Orders
+var (
+	ErrOrderNotFound = errors.New("order not found")
+)

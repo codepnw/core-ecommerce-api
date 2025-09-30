@@ -20,4 +20,6 @@ func (cfg *RoutesConfig) orderRoutes() {
 	r := cfg.Router.Group(cfg.Prefix + "/orders")
 
 	r.Post("/", handler.CreateOrder)
+	r.Get("/", handler.ListOrders)
+	r.Get("/:order_id", handler.UpdateOrderStatus)
 }
