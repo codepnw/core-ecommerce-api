@@ -10,6 +10,7 @@ import (
 type EnvConfig struct {
 	APP AppConfig `envPrefix:"APP_"`
 	DB  DBConfig  `envPrefix:"DB_"`
+	JWT JWTConfig `envPrefix:"JWT_"`
 }
 
 type AppConfig struct {
@@ -24,6 +25,11 @@ type DBConfig struct {
 	Password string `env:"PASSWORD" validate:"omitempty"`
 	Host     string `env:"HOST" default:"localhost"`
 	Port     int    `env:"PORT" default:"5432"`
+}
+
+type JWTConfig struct {
+	SecretKey  string `env:"SECRET_KEY" validate:"required"`
+	RefreshKey string `env:"REFRESH_KEY" validate:"required"`
 }
 
 func LoadConfig() (*EnvConfig, error) {

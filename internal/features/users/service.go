@@ -11,6 +11,7 @@ type IUserService interface {
 	CreateUser(ctx context.Context, req *UserCreate) (*User, error)
 	GetUser(ctx context.Context, id string) (*User, error)
 	GetUsers(ctx context.Context, limit, offset uint) ([]*User, error)
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	UpdateUser(ctx context.Context, id string, req *UserUpdate) error
 	DeleteUser(ctx context.Context, id string) error
 }
@@ -57,6 +58,13 @@ func (s *userService) GetUsers(ctx context.Context, limit uint, offset uint) ([]
 	}
 
 	return s.repo.List(ctx, limit, offset)
+}
+
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	return s.repo.GetByEmail(ctx, email)
 }
 
 func (s *userService) UpdateUser(ctx context.Context, id string, req *UserUpdate) error {

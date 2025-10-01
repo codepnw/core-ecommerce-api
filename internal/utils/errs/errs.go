@@ -17,7 +17,10 @@ var (
 
 // Users
 var (
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound           = errors.New("user not found")
+	ErrInvalidEmailOrPassword = errors.New("invalid email or password")
+	ErrUserTokenExpired       = errors.New("token expired")
+	ErrUserTokenNotFound      = errors.New("token not found")
 )
 
 // Products
