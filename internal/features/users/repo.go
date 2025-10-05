@@ -11,13 +11,14 @@ import (
 
 const (
 	selectUserQuery = `
-		SELECT id, email, full_name, role, created_at, updated_at
+		SELECT id, email, password_hash, full_name, role, created_at, updated_at
 		FROM users
 	`
 )
 
 type IUserRepository interface {
 	Create(ctx context.Context, input *User) (*User, error)
+	CreateTx(ctx context.Context, tx *sql.Tx, input *User) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	List(ctx context.Context, limit, offset uint) ([]*User, error)
@@ -39,6 +40,30 @@ func (r *userRepository) Create(ctx context.Context, input *User) (*User, error)
 		VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
 	`
 	err := r.db.QueryRowContext(
+		ctx,
+		query,
+		input.Email,
+		input.PasswordHash,
+		input.FullName,
+		input.Role,
+	).Scan(
+		&input.ID,
+		&input.CreatedAt,
+		&input.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return input, nil
+}
+
+func (r *userRepository) CreateTx(ctx context.Context, tx *sql.Tx, input *User) (*User, error) {
+	query := `
+		INSERT INTO users (email, password_hash, full_name, role)
+		VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
+	`
+	err := tx.QueryRowContext(
 		ctx,
 		query,
 		input.Email,

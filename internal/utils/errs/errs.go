@@ -21,6 +21,7 @@ var (
 	ErrInvalidEmailOrPassword = errors.New("invalid email or password")
 	ErrUserTokenExpired       = errors.New("token expired")
 	ErrUserTokenNotFound      = errors.New("token not found")
+	ErrEmailAlreadyExists     = errors.New("email already exists")
 )
 
 // Products

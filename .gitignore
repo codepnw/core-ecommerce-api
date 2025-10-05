@@ -13,3 +13,4 @@ go.work
 tmp
 *.env
 *.txt
+*_test.go

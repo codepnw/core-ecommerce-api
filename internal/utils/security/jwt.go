@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/codepnw/core-ecommerce-system/config"
@@ -29,6 +30,9 @@ type UserTokenReq struct {
 }
 
 func InitJWT(cfg *config.EnvConfig) *JWTToken {
+	if cfg == nil {
+		log.Fatal("JWT config is nil")
+	}
 	return &JWTToken{cfg: cfg}
 }
 

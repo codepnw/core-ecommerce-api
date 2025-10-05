@@ -22,10 +22,8 @@ func Success(ctx *fiber.Ctx, msg string, data any) error {
 	})
 }
 
-func Unauthorized(ctx *fiber.Ctx, msg string) error {
-	return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-		"message": msg,
-	})
+func NoContent(ctx *fiber.Ctx) error {
+	return ctx.Status(http.StatusNoContent).JSON(nil)
 }
 
 // ------- ERROR ----------
@@ -40,4 +38,12 @@ func NotFound(ctx *fiber.Ctx, msg string) error {
 
 func InternalServerError(ctx *fiber.Ctx, err error) error {
 	return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{"error": err.Error()})
+}
+
+func Unauthorized(ctx *fiber.Ctx, msg string) error {
+	return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{"message": msg})
+}
+
+func Forbidden(ctx *fiber.Ctx, msg string) error {
+	return ctx.Status(http.StatusForbidden).JSON(&fiber.Map{"message": msg})
 }

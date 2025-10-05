@@ -9,3 +9,9 @@ const (
 	KeyUserParam    = "user_id"
 	KeyAddressParam = "address_id"
 )
+
+// Token Exp
+const (
+	ExpAccessToken  time.Duration = time.Hour * 24
+	ExpRefreshToken time.Duration = time.Hour * 24 * 7
+)

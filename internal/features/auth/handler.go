@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/codepnw/core-ecommerce-system/internal/features/users"
-	"github.com/codepnw/core-ecommerce-system/internal/utils/commons"
+	"github.com/codepnw/core-ecommerce-system/internal/middleware"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/response"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
 	"github.com/gofiber/fiber/v2"
@@ -12,8 +12,8 @@ type authHandler struct {
 	srv IAuthService
 }
 
-func NewAuthHandler() *authHandler {
-	return &authHandler{}
+func NewAuthHandler(srv IAuthService) *authHandler {
+	return &authHandler{srv: srv}
 }
 
 func (h *authHandler) Register(ctx *fiber.Ctx) error {
@@ -53,7 +53,7 @@ func (h *authHandler) Login(ctx *fiber.Ctx) error {
 }
 
 func (h *authHandler) RefreshToken(ctx *fiber.Ctx) error {
-	user, err := commons.GetCurrentUser(ctx)
+	user, err := middleware.GetUserFromContext(ctx)
 	if err != nil {
 		return response.Unauthorized(ctx, "")
 	}
@@ -67,7 +67,7 @@ func (h *authHandler) RefreshToken(ctx *fiber.Ctx) error {
 		return response.BadRequest(ctx, err.Error())
 	}
 
-	res, err := h.srv.RefreshToken(ctx.Context(), user.ID, req)
+	res, err := h.srv.RefreshToken(ctx.Context(), user.UserID, req)
 	if err != nil {
 		return response.InternalServerError(ctx, err)
 	}
@@ -76,18 +76,14 @@ func (h *authHandler) RefreshToken(ctx *fiber.Ctx) error {
 }
 
 func (h *authHandler) Logout(ctx *fiber.Ctx) error {
-	req := new(RefreshTokenRequest)
-	if err := ctx.BodyParser(req); err != nil {
-		return response.BadRequest(ctx, err.Error())
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		return response.Unauthorized(ctx, "")
 	}
 
-	if err := validate.Struct(req); err != nil {
-		return response.BadRequest(ctx, err.Error())
-	}
-
-	if err := h.srv.Logout(ctx.Context(), req.RefreshToken); err != nil {
+	if err := h.srv.Logout(ctx.Context(), user.UserID); err != nil {
 		return response.InternalServerError(ctx, err)
 	}
 
-	return response.Success(ctx, "", nil)
+	return response.NoContent(ctx)
 }

@@ -6,7 +6,9 @@ import (
 
 	"github.com/codepnw/core-ecommerce-system/config"
 	"github.com/codepnw/core-ecommerce-system/internal/database"
+	"github.com/codepnw/core-ecommerce-system/internal/middleware"
 	"github.com/codepnw/core-ecommerce-system/internal/server/routes"
+	"github.com/codepnw/core-ecommerce-system/internal/utils/security"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -18,6 +20,8 @@ func Run(cfg *config.EnvConfig) error {
 	defer db.Close()
 
 	app := fiber.New()
+	token := security.InitJWT(cfg)
+	mid := middleware.InitMiddleware(token)
 
 	// Setup Routes
 	routeCfg := &routes.RoutesConfig{
@@ -25,6 +29,8 @@ func Run(cfg *config.EnvConfig) error {
 		Tx:     database.NewTxManager(db),
 		Router: app,
 		Prefix: fmt.Sprintf("/api/v%d", cfg.APP.Version),
+		Mid:    mid,
+		Token:  token,
 	}
 	if err = routes.InitRoutes(routeCfg); err != nil {
 		return err
