@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/codepnw/core-ecommerce-system/internal/database"
 	"github.com/codepnw/core-ecommerce-system/internal/features/addresses"
 	"github.com/codepnw/core-ecommerce-system/internal/features/carts"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
+	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -18,29 +20,27 @@ type IOrderService interface {
 	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
 
-type orderService struct {
-	repo IOrderRepository
-	cart carts.ICartService
-	addr addresses.IAddressServide
-	tx   *database.TxManager
+type OrderServiceConfig struct {
+	OrderRepo IOrderRepository          `validate:"required"`
+	CartSrv   carts.ICartService        `validate:"required"`
+	AddrSrv   addresses.IAddressServide `validate:"required"`
+	Tx        *database.TxManager       `validate:"required"`
 }
 
-func NewOrderService(tx *database.TxManager, repo IOrderRepository, cart carts.ICartService, addr addresses.IAddressServide) IOrderService {
-	return &orderService{
-		repo: repo,
-		cart: cart,
-		addr: addr,
-		tx:   tx,
+func NewOrderService(cfg *OrderServiceConfig) (IOrderService, error) {
+	if err := validate.Struct(cfg); err != nil {
+		return nil, fmt.Errorf("OrderServiceConfig required all fields: %w", err)
 	}
+	return cfg, nil
 }
 
-func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error {
+func (s *OrderServiceConfig) CreateOrder(ctx context.Context, req *OrderRequest) error {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
 	// Cart Total Price
 	var total int64
-	products, err := s.cart.GetCart(ctx, req.UserID)
+	products, err := s.CartSrv.GetCart(ctx, req.UserID)
 	if err != nil {
 		log.Errorf("get cart failed: %v", err)
 		return errors.New("get cart failed")
@@ -56,16 +56,16 @@ func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error
 	}
 
 	// Get user address
-	addr, err := s.addr.GetAddressByID(ctx, req.AddressID)
+	addr, err := s.AddrSrv.GetAddressByID(ctx, req.AddressID)
 	if err != nil {
 		log.Errorf("get address failed: %v", err)
 		return errors.New("get address failed")
 	}
 
 	// Transaction
-	err = s.tx.Transaction(ctx, func(tx *sql.Tx) error {
+	err = s.Tx.Transaction(ctx, func(tx *sql.Tx) error {
 		// create order
-		orderID, err := s.repo.InsertOrder(ctx, tx, &Order{
+		orderID, err := s.OrderRepo.InsertOrder(ctx, tx, &Order{
 			UserID:     req.UserID,
 			AddressID:  addr.ID,
 			TotalPrice: total,
@@ -77,7 +77,7 @@ func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error
 		}
 
 		// create order address
-		err = s.repo.InsertOrderAddress(ctx, tx, &OrderAddress{
+		err = s.OrderRepo.InsertOrderAddress(ctx, tx, &OrderAddress{
 			OrderID:     orderID,
 			AddressID:   addr.ID,
 			AddressLine: addr.AddressLine,
@@ -93,7 +93,7 @@ func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error
 
 		// create order items
 		for _, product := range products {
-			err = s.repo.InsertOrderItem(ctx, tx, &OrderItem{
+			err = s.OrderRepo.InsertOrderItem(ctx, tx, &OrderItem{
 				OrderID:   orderID,
 				ProductID: product.ProductID,
 				Quantity:  int(product.ProductQuantity),
@@ -110,21 +110,21 @@ func (s *orderService) CreateOrder(ctx context.Context, req *OrderRequest) error
 	return err
 }
 
-func (s *orderService) ListOrders(ctx context.Context, filter *OrderFilter) ([]*OrdersResponse, error) {
+func (s *OrderServiceConfig) ListOrders(ctx context.Context, filter *OrderFilter) ([]*OrdersResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
-	defer cancel()	
-			
-	res, err := s.repo.ListOrders(ctx, filter)
-	if err != nil {							
+	defer cancel()
+
+	res, err := s.OrderRepo.ListOrders(ctx, filter)
+	if err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func (s *orderService) UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error {
+func (s *OrderServiceConfig) UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	return s.repo.UpdateStatus(ctx, id, string(status))
+	return s.OrderRepo.UpdateStatus(ctx, id, string(status))
 }

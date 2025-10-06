@@ -6,7 +6,7 @@ import (
 	"github.com/codepnw/core-ecommerce-system/internal/features/orders"
 )
 
-func (cfg *RoutesConfig) orderRoutes() {
+func (cfg *RoutesConfig) registerOrderRoutes() error {
 	cRepo := carts.NewCartRepository(cfg.DB)
 	cService := carts.NewCartService(cRepo)
 
@@ -14,12 +14,24 @@ func (cfg *RoutesConfig) orderRoutes() {
 	aService := addresses.NewAddressSerivce(aRepo)
 
 	oRepo := orders.NewOrderRepository(cfg.DB)
-	oService := orders.NewOrderService(cfg.Tx, oRepo, cService, aService)
+	oService, err := orders.NewOrderService(&orders.OrderServiceConfig{
+		OrderRepo: oRepo,
+		CartSrv:   cService,
+		AddrSrv:   aService,
+		Tx:        cfg.Tx,
+	})
+	if err != nil {
+		return err
+	}
 	handler := orders.NewOrderHandler(oService)
 
-	r := cfg.Router.Group(cfg.Prefix + "/orders")
+	r := cfg.Router.Group(cfg.Prefix+"/orders", cfg.Mid.Authorized())
 
 	r.Post("/", handler.CreateOrder)
 	r.Get("/", handler.ListOrders)
 	r.Get("/:order_id", handler.UpdateOrderStatus)
+
+	// TODO: admin get order, update status
+
+	return nil
 }

@@ -26,12 +26,14 @@ func InitRoutes(cfg *RoutesConfig) error {
 		return errors.New("routes config required: DB, Router, Prefix")
 	}
 
-	cfg.categoryRoutes()
-	cfg.addressRoutes()
-	cfg.cartRoutes()
-	cfg.orderRoutes()
-
+	cfg.registerCategoryRoutes()
+	cfg.registerAddressRoutes()
+	cfg.registerCartRoutes()
 	cfg.registerProductRoutes()
+
+	if err := cfg.registerOrderRoutes(); err != nil {
+		return fmt.Errorf("OrderRoutes: %w", err)
+	}
 
 	if err := cfg.registerUserRoutes(); err != nil {
 		return fmt.Errorf("UserRoutes: %w", err)
