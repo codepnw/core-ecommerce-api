@@ -1,26 +1,43 @@
 package routes
 
-import "github.com/codepnw/core-ecommerce-system/internal/features/products"
+import (
+	"fmt"
 
-func (cfg *RoutesConfig) productRoutes() {
+	"github.com/codepnw/core-ecommerce-system/internal/features/products"
+	"github.com/codepnw/core-ecommerce-system/internal/middleware"
+)
+
+func (cfg *RoutesConfig) registerProductRoutes() {
 	repo := products.NewProductRepository(cfg.DB)
 	service := products.NewProductService(repo)
 	handler := products.NewProductHandler(service)
 
-	const productID = "/:product_id"
-	const categoryID = "/:category_id"
+	const (
+		productID         = "/:product_id"
+		categoryID        = "/:category_id"
+		productCategoryID = "/:product_id/categories"
+	)
+	path := fmt.Sprintf("%s/products", cfg.Prefix)
 
-	r := cfg.Router.Group(cfg.Prefix + "/products")
-	// Prouducts
-	r.Post("/", handler.CreateProduct)
-	r.Get("/", handler.GetProducts)
-	r.Get(productID, handler.GetProduct)
-	r.Patch(productID, handler.UpdateProduct)
-	r.Delete(productID, handler.DeleteProduct)
-	r.Patch(productID+"/stock", handler.UpdateStock)
+	public := cfg.Router.Group(path)
+	protected := cfg.Router.Group(path, cfg.Mid.Authorized())
+	staff := protected.Group("", cfg.Mid.RoleRequired(middleware.RoleAdmin, middleware.RoleStaff))
+	admin := protected.Group("", cfg.Mid.RoleRequired(middleware.RoleAdmin))
+
+	// Public
+	public.Get("/", handler.GetProducts)
+	public.Get(productID, handler.GetProduct)
+
+	// Admin & Staff
+	staff.Post("/", handler.CreateProduct)
+	staff.Patch(productID+"/stock", handler.UpdateStock)
+
+	// Admin Only
+	admin.Delete(productID, handler.DeleteProduct)
+	admin.Patch(productID, handler.UpdateProduct)
 
 	// Product Categories path /products/{product_id}/categories
-	r.Get(productID+"/categories", handler.GetCategoriesByProduct)
-	r.Delete(productID+"/categories"+categoryID, handler.DelCategoryByProduct)
-	r.Post(productID+"/categories", handler.AssignCategories)
+	admin.Delete(productCategoryID+categoryID, handler.DelCategoryByProduct)
+	admin.Get(productCategoryID, handler.GetCategoriesByProduct)
+	admin.Post(productCategoryID, handler.AssignCategories)
 }

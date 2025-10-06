@@ -8,27 +8,30 @@ import (
 	"github.com/codepnw/core-ecommerce-system/internal/middleware"
 )
 
-func (cfg *RoutesConfig) userRoutes() error {
-	// User Setup
+func (cfg *RoutesConfig) registerUserRoutes() error {
+	// ------- User Setup ----------
 	uRepo := users.NewUserRepository(cfg.DB)
 	uService := users.NewUserService(uRepo)
 	uHandler := users.NewUserHandler(uService)
 
 	const userID = "/:user_id"
+	userPath := fmt.Sprintf("%s/users", cfg.Prefix)
+	authPath := fmt.Sprintf("%s/auth", cfg.Prefix)
 
-	r := cfg.Router.Group(cfg.Prefix + "/users")
-	uPrivate := r.Use(
-		cfg.Mid.Authorized(),
-		cfg.Mid.RoleRequired(middleware.RoleAdmin, middleware.RoleStaff),
-	)
+	u := cfg.Router.Group(userPath, cfg.Mid.Authorized())
+	staff := u.Group("", cfg.Mid.RoleRequired(middleware.RoleAdmin, middleware.RoleStaff))
+	admin := u.Group("", cfg.Mid.RoleRequired(middleware.RoleAdmin))
 
-	uPrivate.Post("/", uHandler.CreateUser)
-	uPrivate.Get("/", uHandler.GetUsers)
-	uPrivate.Get(userID, uHandler.GetUser)
-	uPrivate.Patch(userID, uHandler.UpdateUser)
-	uPrivate.Delete(userID, uHandler.DeleteUser)
+	// Admin & Staff
+	staff.Post("/", uHandler.CreateUser)
+	staff.Get("/", uHandler.GetUsers)
+	staff.Get(userID, uHandler.GetUser)
+	staff.Patch(userID, uHandler.UpdateUser)
 
-	// Auth Setup
+	// Admin Only
+	admin.Delete(userID, uHandler.DeleteUser)
+
+	// ------- Auth Setup ----------
 	aRepo := auth.NewAuthRepository(cfg.DB)
 	aServiceCfg := &auth.AuthServiceConfig{
 		AuthRepo: aRepo,
@@ -43,15 +46,15 @@ func (cfg *RoutesConfig) userRoutes() error {
 	}
 	aHandler := auth.NewAuthHandler(aService)
 
-	aPublic := cfg.Router.Group(cfg.Prefix + "/auth")
+	// Public Auth
+	public := cfg.Router.Group(authPath)
+	public.Post("/register", aHandler.Register)
+	public.Post("/login", aHandler.Login)
 
-	aPublic.Post("/register", aHandler.Register)
-	aPublic.Post("/login", aHandler.Login)
-
-	aPrivate := aPublic.Use(cfg.Mid.Authorized())
-
-	aPrivate.Post("/refresh-token", aHandler.RefreshToken)
-	aPrivate.Get("/logout", aHandler.Logout)
+	// Private Auth
+	private := public.Group("", cfg.Mid.Authorized())
+	private.Post("/refresh-token", aHandler.RefreshToken)
+	private.Get("/logout", aHandler.Logout)
 
 	return nil
 }

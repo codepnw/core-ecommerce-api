@@ -27,12 +27,13 @@ func InitRoutes(cfg *RoutesConfig) error {
 	}
 
 	cfg.categoryRoutes()
-	cfg.productRoutes()
 	cfg.addressRoutes()
 	cfg.cartRoutes()
 	cfg.orderRoutes()
 
-	if err := cfg.userRoutes(); err != nil {
+	cfg.registerProductRoutes()
+
+	if err := cfg.registerUserRoutes(); err != nil {
 		return fmt.Errorf("UserRoutes: %w", err)
 	}
 
