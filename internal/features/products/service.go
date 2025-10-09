@@ -3,6 +3,7 @@ package products
 import (
 	"context"
 
+	"github.com/codepnw/core-ecommerce-system/internal/database"
 	"github.com/codepnw/core-ecommerce-system/internal/features/categories"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
@@ -14,6 +15,7 @@ type IProductService interface {
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductFilter) ([]*Product, error)
 	UpdateStock(ctx context.Context, id int64, stock int) error
+	DeductStock(ctx context.Context, exec database.DBExec, productID int64, qty int) (bool, error)
 	Update(ctx context.Context, id int64, req *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 
@@ -90,6 +92,13 @@ func (s *productService) UpdateStock(ctx context.Context, id int64, stock int) e
 	}
 
 	return s.repo.UpdateStock(ctx, id, stock)
+}
+
+func (s *productService) DeductStock(ctx context.Context, exec database.DBExec, productID int64, qty int) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
+	defer cancel()
+
+	return s.repo.DeductStock(ctx, exec, productID, qty)
 }
 
 func (s *productService) Update(ctx context.Context, id int64, req *ProductUpdate) error {

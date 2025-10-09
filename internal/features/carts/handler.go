@@ -1,6 +1,7 @@
 package carts
 
 import (
+	"github.com/codepnw/core-ecommerce-system/internal/middleware"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/commons"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/response"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
@@ -16,7 +17,7 @@ func NewCartHandler(srv ICartService) *cartHandler {
 }
 
 func (h *cartHandler) AddItem(ctx *fiber.Ctx) error {
-	user, err := commons.GetCurrentUser(ctx)
+	user, err := middleware.GetUserFromContext(ctx)
 	if err != nil {
 		return response.Unauthorized(ctx, err.Error())
 	}
@@ -30,7 +31,7 @@ func (h *cartHandler) AddItem(ctx *fiber.Ctx) error {
 		return response.BadRequest(ctx, err.Error())
 	}
 
-	if err := h.srv.AddItem(ctx.Context(), user.ID, req); err != nil {
+	if err := h.srv.AddItem(ctx.Context(), user.UserID, req); err != nil {
 		return response.InternalServerError(ctx, err)
 	}
 
@@ -38,12 +39,12 @@ func (h *cartHandler) AddItem(ctx *fiber.Ctx) error {
 }
 
 func (h *cartHandler) GetCart(ctx *fiber.Ctx) error {
-	user, err := commons.GetCurrentUser(ctx)
+	user, err := middleware.GetUserFromContext(ctx)
 	if err != nil {
 		return response.Unauthorized(ctx, err.Error())
 	}
 
-	res, err := h.srv.GetCart(ctx.Context(), user.ID)
+	res, err := h.srv.GetCart(ctx.Context(), user.UserID)
 	if err != nil {
 		return response.InternalServerError(ctx, err)
 	}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/codepnw/core-ecommerce-system/internal/database"
 	"github.com/codepnw/core-ecommerce-system/internal/features/categories"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/errs"
 )
@@ -25,6 +26,7 @@ type IProductRepository interface {
 	GetByID(ctx context.Context, id int64) (*Product, error)
 	List(ctx context.Context, filter *ProductListParams) ([]*Product, error)
 	UpdateStock(ctx context.Context, id int64, stock int) error
+	DeductStock(ctx context.Context, exec database.DBExec, productID int64, qty int) (bool, error)
 	Update(ctx context.Context, id int64, input *ProductUpdate) error
 	Delete(ctx context.Context, id int64) error
 
@@ -183,6 +185,19 @@ func (r *productRepository) UpdateStock(ctx context.Context, id int64, stock int
 	}
 
 	return nil
+}
+
+func (r *productRepository) DeductStock(ctx context.Context, exec database.DBExec, productID int64, qty int) (bool, error) {
+	query := `
+		UPDATE products SET stock = stock - $1, updated_at = NOW()
+		WHERE id = $2 AND stock >= $1
+	`
+	res, err := exec.ExecContext(ctx, query, qty, productID)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
 }
 
 func (r *productRepository) Delete(ctx context.Context, id int64) error {

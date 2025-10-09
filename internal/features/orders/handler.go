@@ -3,6 +3,7 @@ package orders
 import (
 	"log"
 
+	"github.com/codepnw/core-ecommerce-system/internal/middleware"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/commons"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/response"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
@@ -18,6 +19,11 @@ func NewOrderHandler(srv IOrderService) *orderHandler {
 }
 
 func (h *orderHandler) CreateOrder(ctx *fiber.Ctx) error {
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		return response.Unauthorized(ctx, err.Error())
+	}
+
 	req := new(OrderRequest)
 	if err := ctx.BodyParser(req); err != nil {
 		return response.BadRequest(ctx, err.Error())
@@ -27,7 +33,7 @@ func (h *orderHandler) CreateOrder(ctx *fiber.Ctx) error {
 		return response.BadRequest(ctx, err.Error())
 	}
 
-	if err := h.srv.CreateOrder(ctx.Context(), req); err != nil {
+	if err := h.srv.CreateOrder(ctx.Context(), user.UserID, req.AddressID); err != nil {
 		return response.InternalServerError(ctx, err)
 	}
 

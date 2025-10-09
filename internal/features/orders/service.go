@@ -9,13 +9,13 @@ import (
 	"github.com/codepnw/core-ecommerce-system/internal/database"
 	"github.com/codepnw/core-ecommerce-system/internal/features/addresses"
 	"github.com/codepnw/core-ecommerce-system/internal/features/carts"
+	"github.com/codepnw/core-ecommerce-system/internal/features/products"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/consts"
 	"github.com/codepnw/core-ecommerce-system/internal/utils/validate"
-	"github.com/gofiber/fiber/v2/log"
 )
 
 type IOrderService interface {
-	CreateOrder(ctx context.Context, req *OrderRequest) error
+	CreateOrder(ctx context.Context, userID, addressID string) error
 	ListOrders(ctx context.Context, filter *OrderFilter) ([]*OrdersResponse, error)
 	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
@@ -23,6 +23,7 @@ type IOrderService interface {
 type OrderServiceConfig struct {
 	OrderRepo IOrderRepository          `validate:"required"`
 	CartSrv   carts.ICartService        `validate:"required"`
+	ProdSrv   products.IProductService  `validate:"required"`
 	AddrSrv   addresses.IAddressServide `validate:"required"`
 	Tx        *database.TxManager       `validate:"required"`
 }
@@ -34,49 +35,43 @@ func NewOrderService(cfg *OrderServiceConfig) (IOrderService, error) {
 	return cfg, nil
 }
 
-func (s *OrderServiceConfig) CreateOrder(ctx context.Context, req *OrderRequest) error {
+func (s *OrderServiceConfig) CreateOrder(ctx context.Context, userID, addressID string) error {
 	ctx, cancel := context.WithTimeout(ctx, consts.ContextTimeout)
 	defer cancel()
 
-	// Cart Total Price
+	// CART TOTAL PRICE
 	var total int64
-	products, err := s.CartSrv.GetCart(ctx, req.UserID)
+	products, err := s.CartSrv.GetCart(ctx, userID)
 	if err != nil {
-		log.Errorf("get cart failed: %v", err)
-		return errors.New("get cart failed")
+		return fmt.Errorf("get cart failed: %w", err)
 	}
-
 	if len(products) == 0 {
-		return errors.New("cart no products")
+		return errors.New("cart is empty")
 	}
-
 	for _, product := range products {
-		subtotal := int64(product.ProductPrice) * product.ProductQuantity
-		total += subtotal
+		total += int64(product.ProductPrice) * product.ProductQuantity
 	}
 
-	// Get user address
-	addr, err := s.AddrSrv.GetAddressByID(ctx, req.AddressID)
+	// GET USER ADDRESS
+	addr, err := s.AddrSrv.GetAddressByID(ctx, addressID)
 	if err != nil {
-		log.Errorf("get address failed: %v", err)
-		return errors.New("get address failed")
+		return fmt.Errorf("get address failed: %w", err)
 	}
 
-	// Transaction
+	// TRANSACTION
 	err = s.Tx.Transaction(ctx, func(tx *sql.Tx) error {
-		// create order
+		// CREATE ORDER
 		orderID, err := s.OrderRepo.InsertOrder(ctx, tx, &Order{
-			UserID:     req.UserID,
+			UserID:     userID,
 			AddressID:  addr.ID,
 			TotalPrice: total,
 			Status:     string(StatusPending),
 		})
 		if err != nil {
-			log.Errorf("insert order failed: %v", err)
-			return errors.New("insert order failed")
+			return fmt.Errorf("insert order failed: %w", err)
 		}
 
-		// create order address
+		// CREATE ORDER ADDRESS
 		err = s.OrderRepo.InsertOrderAddress(ctx, tx, &OrderAddress{
 			OrderID:     orderID,
 			AddressID:   addr.ID,
@@ -87,22 +82,37 @@ func (s *OrderServiceConfig) CreateOrder(ctx context.Context, req *OrderRequest)
 			Phone:       addr.Phone,
 		})
 		if err != nil {
-			log.Errorf("insert order_address failed: %v", err)
-			return errors.New("insert order_address failed")
+			return fmt.Errorf("insert order_address failed: %w", err)
 		}
 
-		// create order items
+		// CREATE ORDER ITEMS
+		var items []*OrderItem
 		for _, product := range products {
-			err = s.OrderRepo.InsertOrderItem(ctx, tx, &OrderItem{
+			ok, err := s.ProdSrv.DeductStock(ctx, tx, product.ProductID, int(product.ProductQuantity))
+			if err != nil {
+				return fmt.Errorf("deduct product stock failed: %w", err)
+			}
+			if !ok {
+				return fmt.Errorf("product %v out of stock", product.ProductName)
+			}
+
+			item := &OrderItem{
 				OrderID:   orderID,
 				ProductID: product.ProductID,
 				Quantity:  int(product.ProductQuantity),
 				Price:     int64(product.ProductPrice),
-			})
-			if err != nil {
-				log.Errorf("insert order_items failed: %v", err)
-				return errors.New("insert order_items failed")
+				SubTotal:  int64(product.ProductPrice) * product.ProductQuantity,
 			}
+			items = append(items, item)
+		}
+		err = s.OrderRepo.InsertOrderItems(ctx, tx, items)
+		if err != nil {
+			return fmt.Errorf("insert order_items failed: %w", err)
+		}
+
+		// CLEAR CART
+		if err = s.CartSrv.ClearCartTx(ctx, tx, userID); err != nil {
+			return fmt.Errorf("clear cart failed: %w", err)
 		}
 
 		return nil

@@ -4,9 +4,13 @@ import (
 	"github.com/codepnw/core-ecommerce-system/internal/features/addresses"
 	"github.com/codepnw/core-ecommerce-system/internal/features/carts"
 	"github.com/codepnw/core-ecommerce-system/internal/features/orders"
+	"github.com/codepnw/core-ecommerce-system/internal/features/products"
 )
 
 func (cfg *RoutesConfig) registerOrderRoutes() error {
+	pRepo := products.NewProductRepository(cfg.DB)
+	pSerivce := products.NewProductService(pRepo)
+
 	cRepo := carts.NewCartRepository(cfg.DB)
 	cService := carts.NewCartService(cRepo)
 
@@ -17,6 +21,7 @@ func (cfg *RoutesConfig) registerOrderRoutes() error {
 	oService, err := orders.NewOrderService(&orders.OrderServiceConfig{
 		OrderRepo: oRepo,
 		CartSrv:   cService,
+		ProdSrv:   pSerivce,
 		AddrSrv:   aService,
 		Tx:        cfg.Tx,
 	})

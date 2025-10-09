@@ -18,6 +18,7 @@ type OrderItem struct {
 	ProductID int64     `json:"product_id"`
 	Quantity  int       `json:"quantity"`
 	Price     int64     `json:"price"`
+	SubTotal  int64     `json:"sub_total"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

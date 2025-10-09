@@ -16,7 +16,7 @@ type IOrderRepository interface {
 	UpdateStatus(ctx context.Context, orderID int64, status string) error
 
 	// Table order_items
-	InsertOrderItem(ctx context.Context, tx *sql.Tx, input *OrderItem) error
+	InsertOrderItems(ctx context.Context, tx *sql.Tx, items []*OrderItem) error
 
 	// Table order_addresses
 	InsertOrderAddress(ctx context.Context, tx *sql.Tx, input *OrderAddress) error
@@ -133,19 +133,18 @@ func (r *orderRepository) UpdateStatus(ctx context.Context, orderID int64, statu
 
 // ------------ Table order_items ------------
 
-func (r *orderRepository) InsertOrderItem(ctx context.Context, tx *sql.Tx, input *OrderItem) error {
-	query := `
-		INSERT INTO order_items (order_id, product_id, quantity, price)
-		VALUES ($1, $2, $3, $4)
-	`
-	_, err := r.db.ExecContext(
-		ctx,
-		query,
-		input.OrderID,
-		input.ProductID,
-		input.Quantity,
-		input.Price,
-	)
+func (r *orderRepository) InsertOrderItems(ctx context.Context, tx *sql.Tx, items []*OrderItem) error {
+	var cols []string
+	var vals []any
+	query := `INSERT INTO order_items (order_id, product_id, quantity, price, sub_total) VALUES `
+
+	for i, item := range items {
+		cols = append(cols, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+		vals = append(vals, item.OrderID, item.ProductID, item.Quantity, item.Price, item.SubTotal)
+	}
+
+	query += strings.Join(cols, ", ")
+	_, err := tx.ExecContext(ctx, query, vals...)
 	return err
 }
 
